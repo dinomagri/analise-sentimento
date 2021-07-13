@@ -213,7 +213,7 @@ def main():
 
         consumer_key = st.text_input('CONSUMER_KEY', 'adicione_aqui')
         consumer_secret = st.text_input('CONSUMER_SECRET' ,'adicione_aqui')
-        access_token = st.text_input('ACCESS_TOKEN' ,'adicione_aqui-0sUck92ROtxcG0OXyZbTL2jMA9bjPg')
+        access_token = st.text_input('ACCESS_TOKEN' ,'adicione_aqui')
         access_token_secret = st.text_input('ACCESS_TOKEN_SECRET' ,'adicione_aqui')
         track_topics = st.text_input('Digite o tópico para recuperar os tweets', 'Copa do Mundo')
         
