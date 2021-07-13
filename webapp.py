@@ -211,10 +211,10 @@ def main():
         st.subheader('Setup inicial')
         set_google_api_key()
 
-        consumer_key = st.text_input('CONSUMER_KEY', 'w3xFmwn3KhEETxOt6lAEd9Dyt')
-        consumer_secret = st.text_input('CONSUMER_SECRET' ,'I0S0c4A7cEA1ysyPzeqfFMCORBYJnTcNgLYbppdgwaF02AfpLP')
-        access_token = st.text_input('ACCESS_TOKEN' ,'1401681923429240833-0sUck92ROtxcG0OXyZbTL2jMA9bjPg')
-        access_token_secret = st.text_input('ACCESS_TOKEN_SECRET' ,'YTOgiMgInz0XZaTgkFEzOPgNzFV97Z2NRxuRlS6yN9oDj')
+        consumer_key = st.text_input('CONSUMER_KEY', 'adicione_aqui')
+        consumer_secret = st.text_input('CONSUMER_SECRET' ,'adicione_aqui')
+        access_token = st.text_input('ACCESS_TOKEN' ,'adicione_aqui-0sUck92ROtxcG0OXyZbTL2jMA9bjPg')
+        access_token_secret = st.text_input('ACCESS_TOKEN_SECRET' ,'adicione_aqui')
         track_topics = st.text_input('Digite o tópico para recuperar os tweets', 'Copa do Mundo')
         
         if st.button('Realizar Classificações'):
