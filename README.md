@@ -8,6 +8,11 @@ O objetivo desse projeto é comparar o uso de modelos criados com diversas etapa
 
 A base de treinamento contém tweets sobre um determinado tema e iremos utilizar a API Streaming do Twitter para recuperar dados em tempo real e realizar a classificação de novos tweets in positivo, neutro e negativo.
 
+Existem dois tutoriais de implantação:
+
+* [Tutorial para execução Web App localmente no Windows 10 com Python](tutoriais/tutorial-execucao-webapp-windows-10-python.md)
+* [Tutorial para execução Web App na GCP - Google Cloud Plataform](tutoriais/tutorial-execucao-webapp-gcp.md)
+
 
 ## Estrutura de diretórios
 
