@@ -106,7 +106,7 @@ cd analise-sentimento
 
 
 ```
-streamlit run web_app.py
+streamlit run webapp.py
 ```
 
 Se for a primeira execução, o Streamlit irá solicitar algumas informações, pode deixar em branco, apenas aperte Enter.
