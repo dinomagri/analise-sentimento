@@ -9,9 +9,14 @@ import re
 import string
 import os
 import tweepy
+import spacy
+
+
+spacy.cli.download('pt_core_news_sm')
 
 nltk.download('stopwords')
 nltk.download('rslp')
+
 
 # Initial setup
 st.set_page_config(layout="wide", page_icon=u"\U0001F916", page_title='Analisador de Sentimento')
@@ -27,23 +32,55 @@ st.set_page_config(layout="wide", page_icon=u"\U0001F916", page_title='Analisado
 
 
 
-def stemmed_palavra(palavra):
-	stemmer = nltk.stem.RSLPStemmer()
-	return stemmer.stem(palavra)
+nlp = spacy.load('pt_core_news_sm')
+
+import re
+import nltk
+
+stopwords_nltk = nltk.corpus.stopwords.words("portuguese")
+stopwords = spacy.lang.pt.stop_words.STOP_WORDS
+
+def preprocessing(texto):
+
+    for sn in stopwords_nltk:
+        stopwords.add(sn)
+
+    # Deixa o texto em minúsculo
+    texto = texto.lower()
+
+    # retira nome do usuário: @labdata
+    texto = re.sub(r"@[A-Za-z0-9$-_@.&+]+", '', texto)
+
+    texto = texto.replace('\n', ' ').replace('\r', ' ').replace('\t', ' ')
+    
+    # retira espaços em branco extras no meio do texto, no começo e no fim
+    texto = re.sub(r" +", ' ', texto).strip()
+
+    # substituir emoticons por texto
+    emoticons = {
+        ':)': 'emocaopositiva',
+        ':d': 'emocaopositiva',
+        '=)': 'emocaopositiva',
+        '=(': 'emocaonegativa',
+        ':(': 'emocaonegativa',
+        ':|': 'emocaoneutra'
+    }
+
+    for emoticon in emoticons:
+        texto = texto.replace(emoticon, emoticons[emoticon])
+
+    doc = nlp(texto.lower())
+
+    lista_de_tokens_tratados = []
+    for token in doc:
+        if (token.text not in stopwords) and (not token.is_punct) and (not token.like_email) and (not token.like_url):
+            lista_de_tokens_tratados.append(token.lemma_)
+
+    return lista_de_tokens_tratados
 
 
 def tratar_texto(texto):
-    string_sem_url = re.sub(r"http\S+", "", texto)
-    string_sem_user = re.sub(r"@\S+", "", string_sem_url)
-    string_sem_rt = re.sub(r"rt+", "", string_sem_user)
-    palavras_separadas_pontuacao = re.sub("(\\W)"," \\1 ", string_sem_rt)
-    palavras = []
-    for plvr in re.split("\\s+", palavras_separadas_pontuacao):
-        if plvr not in string.punctuation and plvr not in nltk.corpus.stopwords.words('portuguese'):
-            plvr_stemm = stemmed_palavra(plvr)
-            palavras.append(plvr_stemm)
-    
-    return palavras
+    return preprocessing(texto)
 
 
 def set_google_api_key():
@@ -89,6 +126,17 @@ def predict_local(texto):
     score = max(proba[0])
     return classe[0], round(score, 4)
 
+def  plot_emoji(resultado, classe):
+    if classe == 'negativo':
+        emoji = u'\U0001f641'
+        st.error(resultado.format(emoji))
+    elif classe == 'positivo':
+        emoji = u'\U0001f642'
+        st.success(resultado.format(emoji))
+    elif classe == 'neutro':
+        emoji = u'\U0001f610'
+        st.warning(resultado.format(emoji))
+
 
 def predict_text(texto, thr=0.1, predict_type='local'):
     if not texto:
@@ -108,16 +156,7 @@ def predict_text(texto, thr=0.1, predict_type='local'):
     if predict_type == 'google_nl_api':
         resultado += f' - magnitude: {magnitude}'
 
-    if classe == 'negativo':
-        emoji = u'\U0001f641'
-        st.error(resultado.format(emoji))
-    elif classe == 'positivo':
-        emoji = u'\U0001f642'
-        st.success(resultado.format(emoji))
-    elif classe == 'neutro':
-        emoji = u'\U0001f610'
-        st.warning(resultado.format(emoji))
-
+    plot_emoji(resultado, classe)
 
 
 def compare_predict_text(texto, thr=0.1, predict_type='local'):
@@ -134,34 +173,39 @@ def compare_predict_text(texto, thr=0.1, predict_type='local'):
     if predict_type == 'google_nl_api':
         resultado += f' - magnitude: {magnitude}'
 
-    if classe == 'negativo':
-        emoji = u'\U0001f641'
-        st.error(resultado.format(emoji))
-    elif classe == 'positivo':
-        emoji = u'\U0001f642'
-        st.success(resultado.format(emoji))
-    elif classe == 'neutro':
-        emoji = u'\U0001f610'
-        st.warning(resultado.format(emoji))
+    plot_emoji(resultado, classe)
 
 
+def delete_previous_rules_from_streaming(stream_client):
+    rule_ids = []
+    result = stream_client.get_rules()
+    if result.data:
+        for rule in result.data:
+            print(f"rule marked to delete: {rule.id} - {rule.value}")
+            rule_ids.append(rule.id)
+     
+    if(len(rule_ids) > 0):
+        stream_client.delete_rules(rule_ids)
+    else:
+        print("no rules to delete")
 
-class DadosPublicosTwitter(tweepy.StreamListener):
-    def on_status(self, tweet):
+
+def add_rules(track_topics, language='pt'):
+    return f'{track_topics} lang:{language}'
+
+
+class DadosPublicosTwitter(tweepy.StreamingClient):
+    def on_tweet(self, tweet):
         if not parar_stream:
-            if not hasattr(tweet, "retweeted_status"):
-                try:
-                    texto = tweet.extended_tweet["full_text"]
-                    st.subheader(texto)
-                    compare_predict_text(texto)
-                    compare_predict_text(texto, predict_type='google_nl_api')
-                except AttributeError:
-                    texto = tweet.text
-                    st.subheader(texto)
-                    compare_predict_text(texto)
-                    compare_predict_text(texto, predict_type='google_nl_api')
+            if hasattr(tweet, "text"):
+                texto = tweet.text
+                st.subheader(texto)
+                #texto = preprocessing(texto)
+                compare_predict_text(texto)
+                compare_predict_text(texto, predict_type='google_nl_api')
             return True
         else:
+            print('-----> A captura foi finalizada!')
             exit()
             return False
 
@@ -211,32 +255,30 @@ def main():
         st.subheader('Setup inicial')
         set_google_api_key()
 
-        consumer_key = st.text_input('CONSUMER_KEY', 'adicione_aqui')
-        consumer_secret = st.text_input('CONSUMER_SECRET' ,'adicione_aqui')
-        access_token = st.text_input('ACCESS_TOKEN' ,'adicione_aqui')
-        access_token_secret = st.text_input('ACCESS_TOKEN_SECRET' ,'adicione_aqui')
-        track_topics = st.text_input('Digite o tópico para recuperar os tweets', 'Copa do Mundo')
+        bearer_token = st.text_input('bearer_token', '')
+        track_topics = st.text_input('Digite o tópico para recuperar os tweets', '')
         
         if st.button('Realizar Classificações'):
-            if any(var == '' for var in (consumer_key, consumer_secret, access_token, access_token_secret, track_topics)):
+            if any(var == '' for var in (bearer_token, track_topics)):
                 st.error('Todos os campos são necessários')
             else:
                 
                 global parar_stream
                 parar_stream = st.button('Reset')
 
-                autorizar = tweepy.OAuthHandler(consumer_key, consumer_secret)
-                autorizar.set_access_token(access_token, access_token_secret)
+                dados_twitter = DadosPublicosTwitter(bearer_token, wait_on_rate_limit=True, max_retries=3)
+                delete_previous_rules_from_streaming(dados_twitter)
 
-                dados_twitter = DadosPublicosTwitter()
-                fluxo = tweepy.Stream(autorizar, dados_twitter, tweet_mode='extended')
-                fluxo.filter(track=[track_topics], languages=['pt'])
+                # Add new rule # https://developer.twitter.com/en/docs/twitter-api/tweets/filtered-stream/integrate/build-a-rule#list
+                rule = tweepy.StreamRule(value=add_rules(track_topics))
+                dados_twitter.add_rules(rule)
 
+                dados_twitter.filter(expansions="author_id", tweet_fields="created_at")
 
 
 
 if __name__ == '__main__':
-    pickle_in = open(f'models/best_model.pickle', 'rb')
+    pickle_in = open(f'models/best_model0.pickle', 'rb')
     classifier = pickle.load(pickle_in)
 
     main()

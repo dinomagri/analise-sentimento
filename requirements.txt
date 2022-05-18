@@ -1,7 +1,7 @@
-streamlit==0.84.1
-google-cloud-language==2.2.0
-nltk==3.6.2
-tweepy==3.10
-scikit-learn==0.24.2
-pandas==1.3.0 
-matplotlib==3.4.2
+streamlit==1.9.0
+google_cloud_language==2.4.1
+nltk==3.7
+tweepy==4.9.0
+spacy==3.3.0
+scikit_learn==1.0.2
+catboost==1.0.5
