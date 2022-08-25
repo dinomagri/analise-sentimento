@@ -48,4 +48,6 @@ echo
 sleep 30
 
 # Executar o comando abaixo para o web app: http://SEU_IP:8501
+export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
 streamlit run webapp.py
